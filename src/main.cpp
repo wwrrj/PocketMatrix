@@ -2,9 +2,10 @@
 #include <WiFi.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <algorithm>
 #include "animation.h"
 #include "fonts.h"
-#include <algorithm>
+#include "color.h"
 
 // === LED 配置 ===
 #define NUM_LEDS 256
@@ -34,22 +35,32 @@ NTPClient timeClient(ntpUDP, "ntp.aliyun.com", 8 * 3600);
 //     1         2
 //     4         3
 //
-int getPixelIndex(int x, int y) {
+int getPixelIndex(int x, int y)
+{
   int localX = x % 8;
   int localY = y % 8;
   int localOffset = localY * 8 + localX;
 
-  if (y < 8) {  // 第一行
-    if (x < 8) {
-      return localOffset;       // 屏1 (左上) 0-63
-    } else {
-      return 64 + localOffset;  // 屏2 (右上) 64-127
+  if (y < 8)
+  { // 第一行
+    if (x < 8)
+    {
+      return localOffset; // 屏1 (左上) 0-63
     }
-  } else {       // 第二行
-    if (x < 8) {
+    else
+    {
+      return 64 + localOffset; // 屏2 (右上) 64-127
+    }
+  }
+  else
+  { // 第二行
+    if (x < 8)
+    {
       // 左下角为屏3 (192-255)
       return 192 + localOffset;
-    } else {
+    }
+    else
+    {
       // 右下角为屏4 (128-191)
       return 128 + localOffset;
     }
@@ -99,13 +110,18 @@ void drawSmallColon(int startX, int startY, CRGB color)
 }
 
 // ===== 矩形绘制 =====
-void drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, CRGB color) {
-  if(x1 > x2) std::swap(x1, x2);
-  if(y1 > y2) std::swap(y1, y2);
+void drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, CRGB color)
+{
+  if (x1 > x2)
+    std::swap(x1, x2);
+  if (y1 > y2)
+    std::swap(y1, y2);
 
   // 填充矩形区域
-  for(uint8_t y = y1; y <= y2; y++) {
-    for(uint8_t x = x1; x <= x2; x++) {
+  for (uint8_t y = y1; y <= y2; y++)
+  {
+    for (uint8_t x = x1; x <= x2; x++)
+    {
       leds[getPixelIndex(x, y)] = color;
     }
   }
@@ -135,58 +151,73 @@ uint8_t enhanceContrast(uint8_t value)
 }
 
 // ===== 动画播放 =====
-void playAnimation(int frameDelay = 80, int brightness = 100) {
-    uint8_t originalBrightness = FastLED.getBrightness();
+void playAnimation(int frameDelay = 80, int brightness = 100)
+{
+  uint8_t originalBrightness = FastLED.getBrightness();
 
-    FastLED.setBrightness(brightness);
+  FastLED.setBrightness(brightness);
 
-    for (uint16_t frame = 0; frame < ANIMATION_FRAMES; frame++) {
-        if (WiFi.status() != WL_CONNECTED) {
-            Serial.println("WiFi disconnected during animation!");
-            break;
-        }
+  for (uint16_t frame = 0; frame < ANIMATION_FRAMES; frame++)
+  {
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      Serial.println("WiFi disconnected during animation!");
+      break;
+    }
 
-        for (int y = 0; y < 16; y++) {
-            for (int x = 0; x < 16; x++) {
-                uint32_t color = pgm_read_dword(&(a[frame][y][x]));
+    for (int y = 0; y < 16; y++)
+    {
+      for (int x = 0; x < 16; x++)
+      {
+        uint32_t color = pgm_read_dword(&(a[frame][y][x]));
 
-                uint8_t g = (color >> 16) & 0xFF;
-                uint8_t r = (color >> 8) & 0xFF;
-                uint8_t b = color & 0xFF;
+        uint8_t g = (color >> 16) & 0xFF;
+        uint8_t r = (color >> 8) & 0xFF;
+        uint8_t b = color & 0xFF;
 
-                r = enhanceContrast(r);
-                g = enhanceContrast(g);
-                b = enhanceContrast(b);
+        r = enhanceContrast(r);
+        g = enhanceContrast(g);
+        b = enhanceContrast(b);
 
-                int index = getPixelIndex(x, y);
-                leds[index] = CRGB(r, g, b);
-            }
-        }
-
-        FastLED.show();
-        delay(frameDelay);
+        int index = getPixelIndex(x, y);
+        leds[index] = CRGB(r, g, b);
+      }
     }
 
     FastLED.show();
+    delay(frameDelay);
+  }
+
+  FastLED.show();
 }
 
 // ===== 绘制日期函数 =====
 void drawDate(int day)
 {
-    drawRectangle(0, 8, 8, 9, CRGB::Red); // 清除日期区域
-    drawRectangle(0, 10, 8, 15, CRGB::White); // 清除日期区域
+  drawRectangle(0, 8, 8, 9, CRGB::Red);     // 清除日期区域
+  drawRectangle(0, 10, 8, 15, CRGB::White); // 清除日期区域
 
-    // 绘制日期数字
-    if (day < 10)
-        drawSmallDigit(day, 3, 10, CRGB::Black); // 单个数字
-    else
-        drawSmallDigit(day / 10, 1, 10, CRGB::Black), // 两位数
+  // 绘制日期数字
+  if (day < 10)
+    drawSmallDigit(day, 3, 10, CRGB::Black); // 单个数字
+  else
+    drawSmallDigit(day / 10, 1, 10, CRGB::Black), // 两位数
         drawSmallDigit(day % 10, 5, 10, CRGB::Black);
 
-    FastLED.show();
+  FastLED.show();
 }
 
-void draw_time_style1(int currentHour, int currentMinute, int currentSecond, int currentDay)
+// === 将32位十六进制RGB颜色转换为RGB分量 ===
+CRGB hexToRGB(uint32_t hexColor)
+{
+  uint8_t r = (hexColor >> 16) & 0xFF; // 提取红色分量
+  uint8_t g = (hexColor >> 8) & 0xFF;  // 提取绿色分量
+  uint8_t b = hexColor & 0xFF;         // 提取蓝色分量
+
+  return CRGB(r, g, b);
+}
+
+void draw_time_style1(int currentHour, int currentMinute, int currentSecond)
 {
   // 清除LED
   FastLED.clear();
@@ -208,7 +239,29 @@ void draw_time_style1(int currentHour, int currentMinute, int currentSecond, int
   // --- 绘制分钟 ---
   drawSmallDigit(currentMinute / 10, 8, 9, CRGB::White);
   drawSmallDigit(currentMinute % 10, 12, 9, CRGB::White);
-  drawDate(currentDay);
+  FastLED.show();
+  delay(1000);
+}
+
+void draw_time_style2(int currentHour, int currentMinute, int currentSecond)
+{
+  // 清除LED
+  FastLED.clear();
+
+  for (int i = 0; i < 16; i++)
+  {
+    leds[getPixelIndex(i,4)] = hexToRGB(color1[i]);
+    leds[getPixelIndex(i,12)] = hexToRGB(color1[15 - i]);
+  }
+
+  // --- 绘制小时 ---
+  drawSmallDigit(currentHour / 10, 0, 6, CRGB::White);
+  drawSmallDigit(currentHour % 10, 4, 6, CRGB::White);
+
+  // --- 绘制分钟 ---
+  drawSmallDigit(currentMinute / 10, 9, 6, CRGB::White);
+  drawSmallDigit(currentMinute % 10, 13, 6, CRGB::White);
+
   FastLED.show();
   delay(1000);
 }
@@ -245,15 +298,16 @@ void setup()
   Serial.println("NTP client started and time synchronized.");
 }
 
-void loop() {
+void loop()
+{
 
-    timeClient.update();
+  timeClient.update();
 
-    int currentHour = timeClient.getHours();
-    int currentMinute = timeClient.getMinutes();
-    int currentSecond = timeClient.getSeconds();
-    int currentDay = timeClient.getDate();
+  int currentHour = timeClient.getHours();
+  int currentMinute = timeClient.getMinutes();
+  int currentSecond = timeClient.getSeconds();
+  int currentDay = timeClient.getDate();
 
-    //playAnimation(100, 100); // 播放动画 TEST
-    draw_time_style1(currentHour, currentMinute, currentSecond, currentDay);
+  // playAnimation(100, 100); // 播放动画 TEST
+  draw_time_style2(currentHour, currentMinute, currentSecond);
 }

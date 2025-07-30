@@ -1,0 +1,20 @@
+#include <cstdint>
+// 16个预定义颜色（16进制RGB格式）
+const uint32_t color1[16] = {
+    0xff0f83,
+    0xf21f87,
+    0xe62f8c,
+    0xd93f90,
+    0xcd4f95,
+    0xc05f99,
+    0xb36f9e,
+    0xa77fa2,
+    0x9a8fa7,
+    0x8e9fab,
+    0x81afb0,
+    0x74bfb4,
+    0x68cfb9,
+    0x5bdfbd,
+    0x4fefc2,
+    0x42ffc6
+};
